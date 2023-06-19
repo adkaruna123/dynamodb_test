@@ -63,7 +63,8 @@ def put_items_in_dynamo_db(items):
 
 
 # List items in the table
-def list_items():
+def list_last_modifies_items():
+    current_time = datetime.datetime.now().isoformat()
     table = DYNAMO_DB_CLIENT.Table(ASSET_DB_NAME)
     response = table.scan()
     items = response['Items']
@@ -71,11 +72,20 @@ def list_items():
     while 'LastEvaluatedKey' in response:
         response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
         items.extend(response['Items'])
-    
+        modified_list = []
+        minutes_list = []
     for item in items:
-        print(item)
-    
-    return items
+        item_date =  item['LastModified']
+        difference_in_time = current_time - item_date
+        diff_in_minutes = int(difference_in_time.seconds / 60)
+        item['minutes'] = diff_in_minutes
+        modified_list.append(item)
+        minutes_list.append(diff_in_minutes)
+    minutes_list.sort()    
+    for item in modified_list:
+        if minutes_list[0] == item['minutes']:
+            print(item)
+    return modified_list
 
 
 #get item
